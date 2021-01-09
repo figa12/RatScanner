@@ -182,9 +182,36 @@
 				</Grid>
 
 				<Grid Margin="0,0,0,5">
-					<Label Grid.Column="0" Content="Quest - Count - Raid Only" />
-					<Label Grid.Column="1" Content="{Binding QuestCount}" />
-					<Label Grid.Column="3" Content="{Binding QuestInRaid}" />
+					<Label Grid.Column="0" Content="Quest" />
+					<Label Grid.Column="1" Content="{Binding QuestCount}" FontSize="13">
+						<Label.Style>
+							<Style TargetType="Label">
+								<Style.Triggers>
+									<DataTrigger Binding="{Binding Path=neededForQuest}" Value="True">
+										<Setter Property="Foreground" Value="#FF6666" />
+									</DataTrigger>
+									<DataTrigger Binding="{Binding Path=neededForQuest}" Value="False">
+										<Setter Property="Foreground" Value="#66DD66" />
+									</DataTrigger>
+								</Style.Triggers>
+							</Style>
+						</Label.Style>
+					</Label>
+
+					<Label Grid.Column="3" Content="{Binding QuestInRaid}" FontSize="13">
+						<Label.Style>
+							<Style TargetType="Label">
+								<Style.Triggers>
+									<DataTrigger Binding="{Binding Path=neededForQuest}" Value="True">
+										<Setter Property="Foreground" Value="#FF6666" />
+									</DataTrigger>
+									<DataTrigger Binding="{Binding Path=neededForQuest}" Value="False">
+										<Setter Property="Visibility" Value="Collapsed" />
+									</DataTrigger>
+								</Style.Triggers>
+							</Style>
+						</Label.Style>
+					</Label>
 
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width="*" />
