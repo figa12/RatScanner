@@ -79,6 +79,9 @@ namespace RatScanner.ViewModel
 			return MatchedItems[0].SumMods(item => item.TraderPrice);
 		}
 
+		public string QuestCount => ""+MatchedItems[0].QuestCount;
+		public string QuestInRaid => "" + MatchedItems[0].QuestInRaid;
+
 		public string DiscordLink => ApiManager.GetResource(ApiManager.ResourceType.Discord);
 
 		public string GithubLink => ApiManager.GetResource(ApiManager.ResourceType.Github);

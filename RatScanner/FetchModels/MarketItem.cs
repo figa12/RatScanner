@@ -15,6 +15,11 @@ namespace RatScanner.FetchModels
 		public string ImgLink { get; set; } = "Unknown";
 		public int Timestamp { get; set; } = 0;
 
+		public Boolean Quest { get; set; } = false;
+		public int QuestCount { get; set; } = -1;
+
+		public Boolean QuestInRaid { get; set; } = false;
+
 		// Price data
 		public int Price { get; set; } = 0;
 
@@ -88,4 +93,6 @@ namespace RatScanner.FetchModels
 			return min < minMods ? min : minMods;
 		}
 	}
+
+
 }
