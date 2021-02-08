@@ -13,20 +13,11 @@ namespace RatScanner.View
 	/// </summary>
 	internal partial class Settings : UserControl, ISwitchable
 	{
-		private readonly Task scanLockTask;
-
 		internal Settings()
 		{
 			InitializeComponent();
 			DataContext = new SettingsVM();
-
-			// Acquire scan lock to prevent issues when changing hot settings
-			scanLockTask = Task.Run(() =>
-			{
-				// Wait if currently scanning a item
-				while (RatScannerMain.Instance.ScanLock) Thread.Sleep(25);
-				RatScannerMain.Instance.ScanLock = true;
-			});
+			RatScannerMain.Instance.HotkeyManager.UnregisterHotkeys();
 		}
 
 		private void HyperlinkRequestNavigate(object sender, RequestNavigateEventArgs e)
@@ -49,11 +40,7 @@ namespace RatScanner.View
 
 		private void SaveSettings(object sender, RoutedEventArgs e)
 		{
-			if (!scanLockTask.Wait(1000))
-			{
-				Logger.LogWarning("Could not save settings. Scan lock not acquired!");
-				return;
-			}
+			Logger.LogInfo("Applying config...");
 
 			var settingsVM = (SettingsVM)DataContext;
 
@@ -69,7 +56,7 @@ namespace RatScanner.View
 			RatConfig.IconScan.Enable = settingsVM.EnableIconScan;
 			RatConfig.IconScan.ScanRotatedIcons = settingsVM.ScanRotatedIcons;
 			RatConfig.IconScan.UseCachedIcons = settingsVM.UseCachedIcons;
-			RatConfig.IconScan.ModifierKeyCode = settingsVM.IconScanModifier;
+			RatConfig.IconScan.Hotkey = settingsVM.IconScanHotkey;
 
 			RatConfig.ToolTip.Duration = int.TryParse(settingsVM.ToolTipDuration, out var i) ? i : 0;
 
@@ -93,6 +80,8 @@ namespace RatScanner.View
 			// Apply config
 			PageSwitcher.Instance.Topmost = RatConfig.AlwaysOnTop;
 			if (updateMarketDB) RatScannerMain.Instance.MarketDB.Init();
+			RatScannerMain.Instance.HotkeyManager.RegisterHotkeys();
+			Logger.LogInfo("Config saved!");
 
 			// Switch back to main menu
 			PageSwitcher.Instance.Navigate(new MainMenu());
@@ -105,13 +94,7 @@ namespace RatScanner.View
 
 		public void OnClose()
 		{
-			if (!scanLockTask.Wait(1000))
-			{
-				scanLockTask.Dispose();
-			}
-
-			// Release scan lock
-			RatScannerMain.Instance.ScanLock = false;
+			RatScannerMain.Instance.HotkeyManager.RegisterHotkeys();
 		}
 	}
 }

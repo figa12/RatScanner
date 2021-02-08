@@ -256,7 +256,10 @@ namespace RatScanner
 
 			try
 			{
-				var json = File.ReadAllText(RCPaths.DynamicCorrelation);
+				// Since the EFT client is actively using the same file, we need to use FileShare.ReadWrite permissions to keep it from being locked.
+				using var fileStream = File.Open(RCPaths.DynamicCorrelation, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+				using var textReader = new StreamReader(fileStream);
+				var json = textReader.ReadToEnd();
 
 				// Check if we already parsed this
 				var hashCode = json.GetHashCode();
@@ -314,7 +317,7 @@ namespace RatScanner
 			// Remove and store leading base uid
 			var spaceIndex = pairs[0].IndexOf(' ');
 			var baseUid = spaceIndex > -1 ? pairs[0].Substring(0, spaceIndex) : pairs[0];
-			pairs[0] = spaceIndex > -1 ? pairs[0].Substring(spaceIndex + 1) : "";
+			pairs[0] = spaceIndex > -1 ? pairs[0][(spaceIndex + 1)..] : "";
 
 			// Found item without any extra info
 			if (string.IsNullOrWhiteSpace(pairs[0])) return new ItemInfo(baseUid);
@@ -376,36 +379,32 @@ namespace RatScanner
 			Logger.LogDebug("Dynamic correlation data changed");
 			if (!RatConfig.IconScan.UseCachedIcons) return;
 
-			// Wait if currently scanning a item
-			while (RatScannerMain.Instance.ScanLock) await Task.Delay(25);
+			lock (RatScannerMain.NameScanLock)
+				lock (RatScannerMain.IconScanLock)
+				{
 
-			// Try to load new dynamic correlation data
-			var newDynamicCorrelationData = LoadDynamicCorrelationData();
-			if (newDynamicCorrelationData == null) return;
+					// Try to load new dynamic correlation data
+					var newDynamicCorrelationData = LoadDynamicCorrelationData();
+					if (newDynamicCorrelationData == null) return;
 
-			// Try to load new dynamic icons
-			var newDynamicIcons = LoadDynamicIcons();
-			if (newDynamicIcons == null) return;
+					// Try to load new dynamic icons
+					var newDynamicIcons = LoadDynamicIcons();
+					if (newDynamicIcons == null) return;
 
-			// All data loaded successfully at this point so we can begin swapping the data
+					// All data loaded successfully at this point so we can begin swapping the data
 
-			// Acquire the lock
-			RatScannerMain.Instance.ScanLock = true;
+					// Replace old with new dynamic icons
+					DynamicIcons = newDynamicIcons;
 
-			// Replace old with new dynamic icons
-			DynamicIcons = newDynamicIcons;
+					// Replace old with new dynamic correlation data
+					foreach (var (key, value) in newDynamicCorrelationData)
+					{
+						CorrelationData[key] = value;
+					}
 
-			// Replace old with new dynamic correlation data
-			foreach (var (key, value) in newDynamicCorrelationData)
-			{
-				CorrelationData[key] = value;
-			}
-
-			// Update inverse correlation data
-			InverseCorrelationData();
-
-			// Release the lock
-			RatScannerMain.Instance.ScanLock = false;
+					// Update inverse correlation data
+					InverseCorrelationData();
+				}
 		}
 
 		/// <summary>
